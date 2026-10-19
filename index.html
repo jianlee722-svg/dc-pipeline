@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>K-DC 파이프라인 워치</title>
+<meta name="description" content="국내 데이터센터 시장 현황, 2027~2030+ RFS 프로젝트 레지스터와 사례 분석, 매일 갱신되는 뉴스 피드">
+<meta property="og:title" content="K-DC 파이프라인 워치">
+<meta property="og:description" content="국내 데이터센터 프로젝트·RFS 일정·시장 현황, 매일 업데이트">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>
+/* Layout: 송배전 단선도 같은 차분한 그리드 위에, 위→아래로 요약 지표 → 시장 구조 → RFS 타임라인 → 프로젝트 레지스터 → 사례 → 데일리 피드 */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#14202e; --muted:#5a6878; --line:#d5dbe2; --line-soft:#e4e8ed;
+  --accent:#c8641e; --accent-soft:#f6e3d3; --cobalt:#2350b8;
+  --metro:#2350b8; --metro-soft:#dde5f7; --region:#1d7a5c; --region-soft:#d9efe6;
+  --ok:#1d7a5c; --warn:#b07a12; --warn-soft:#f6ecd2; --idle:#7a8592; --idle-soft:#e7eaee;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f151c; --panel:#161e28; --ink:#e3e8ee; --muted:#93a0ae; --line:#2a3542; --line-soft:#212b36;
+  --accent:#e98a45; --accent-soft:#3a2617; --cobalt:#7fa2ef;
+  --metro:#7fa2ef; --metro-soft:#1d2a45; --region:#5cc39d; --region-soft:#163329;
+  --ok:#5cc39d; --warn:#e0b24f; --warn-soft:#382d14; --idle:#8b96a3; --idle-soft:#232c37; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151c; --panel:#161e28; --ink:#e3e8ee; --muted:#93a0ae; --line:#2a3542; --line-soft:#212b36;
+  --accent:#e98a45; --accent-soft:#3a2617; --cobalt:#7fa2ef;
+  --metro:#7fa2ef; --metro-soft:#1d2a45; --region:#5cc39d; --region-soft:#163329;
+  --ok:#5cc39d; --warn:#e0b24f; --warn-soft:#382d14; --idle:#8b96a3; --idle-soft:#232c37; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:32px 32px;background-attachment:fixed}
+a{color:var(--cobalt);text-decoration-thickness:1px;text-underline-offset:2px}
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.3}
+h1{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:16px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.sec-head{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.sec-head p{color:var(--muted);max-width:70ch}
+
+/* header */
+header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:end;border-bottom:2px solid var(--ink);padding-bottom:18px}
+header .lede{color:var(--muted);max-width:68ch;margin-top:8px}
+.status{display:flex;flex-direction:column;gap:4px;align-items:flex-end;text-align:right;font-size:12.5px}
+.pulse{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:12px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
+.pulse i{width:8px;height:8px;border-radius:50%;background:var(--idle)}
+.pulse.live i{background:var(--ok);box-shadow:0 0 0 3px var(--region-soft)}
+@media (max-width:720px){header{grid-template-columns:1fr}.status{align-items:flex-start;text-align:left}}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);background:var(--panel)}
+.kpi{padding:16px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi:nth-child(3n){border-right:0}
+.kpi:nth-last-child(-n+3){border-bottom:0}
+.kpi .v{font-family:var(--f-mono);font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:14px;color:var(--muted);font-weight:500}
+.kpi .k{font-size:13.5px;font-weight:600}
+.kpi .s{font-size:12px;color:var(--muted)}
+@media (max-width:820px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{border-right:1px solid var(--line)!important;border-bottom:1px solid var(--line)!important}.kpi:nth-child(2n){border-right:0!important}.kpi:nth-last-child(-n+2){border-bottom:0!important}}
+@media (max-width:460px){.kpis{grid-template-columns:1fr}.kpi{border-right:0!important;border-bottom:1px solid var(--line)!important}.kpi:last-child{border-bottom:0!important}}
+
+/* funnel */
+.funnel{background:var(--panel);border:1px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:10px}
+.frow{display:grid;grid-template-columns:150px minmax(0,1fr) 110px;gap:12px;align-items:center;font-size:13px}
+.fbar{height:22px;background:var(--line-soft);position:relative}
+.fbar span{position:absolute;inset:0 auto 0 0;background:var(--metro)}
+.frow.final .fbar span{background:var(--accent)}
+.frow .n{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.frow{grid-template-columns:96px minmax(0,1fr) 84px;font-size:12px}}
+
+/* market structure */
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+.note{background:var(--panel);border:1px solid var(--line);padding:18px 20px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.note .tag{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.08em}
+.note p{font-size:14.5px}
+.note ul{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+
+/* timeline */
+.tl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:var(--panel)}
+.tl-col{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.tl-col:last-child{border-right:0}
+.tl-yr{padding:12px 14px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline}
+.tl-yr b{font-family:var(--f-mono);font-size:20px}
+.tl-yr span{font-size:12px;color:var(--muted)}
+.tl-list{padding:10px;display:flex;flex-direction:column;gap:6px}
+.chip{display:flex;flex-direction:column;gap:2px;padding:7px 9px;border-left:3px solid var(--metro);background:var(--metro-soft);font-size:12.5px;line-height:1.35;cursor:pointer;text-align:left;border-top:0;border-right:0;border-bottom:0;color:var(--ink);font-family:inherit;width:100%}
+.chip.rg{border-left-color:var(--region);background:var(--region-soft)}
+.chip.ann{background:transparent;border:1px dashed var(--line);border-left:3px dashed var(--idle)}
+.chip b{font-weight:600}
+.chip em{font-style:normal;font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;display:inline-block}
+@media (max-width:900px){.tl{grid-template-columns:repeat(2,minmax(0,1fr))}.tl-col:nth-child(2){border-right:0}.tl-col:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+@media (max-width:480px){.tl{grid-template-columns:1fr}.tl-col{border-right:0;border-bottom:1px solid var(--line)}}
+
+/* register */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--line);background:var(--panel)}
+.seg button{border:0;background:transparent;padding:7px 12px;font:inherit;font-size:13px;color:var(--muted);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.filters input{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-width:0;flex:1 1 180px;max-width:280px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:980px;font-size:13.5px}
+th{text-align:left;font-weight:600;font-size:12px;color:var(--muted);padding:10px 12px;border-bottom:2px solid var(--ink);white-space:nowrap;background:var(--panel);position:sticky;top:0}
+td{padding:11px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tr.hl td{background:var(--accent-soft)}
+td.name b{display:block;font-weight:600}
+td.name span{font-size:12px;color:var(--muted)}
+td.cap{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
+td.rfs{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
+td.memo{font-size:12.8px;color:var(--muted);max-width:340px}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.st-build{background:var(--region-soft);color:var(--ok)}
+.st-permit{background:var(--warn-soft);color:var(--warn)}
+.st-plan{background:var(--idle-soft);color:var(--idle)}
+.st-ann{background:transparent;color:var(--idle);border:1px dashed var(--idle)}
+.reg{font-size:11px;font-family:var(--f-mono);padding:1px 6px;border:1px solid currentColor;border-radius:3px}
+.reg.m{color:var(--metro)} .reg.r{color:var(--region)}
+.upd{display:block;margin-top:4px;font-size:11.5px;color:var(--accent);font-weight:600}
+.count{font-size:12.5px;color:var(--muted);margin-left:auto}
+
+/* cases */
+.cases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.cases{grid-template-columns:1fr}}
+.case{background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.case-h{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.case-h .mono{font-size:12px;color:var(--muted)}
+.case-b{padding:14px 18px;display:flex;flex-direction:column;gap:10px;font-size:14px}
+.case dl{display:grid;grid-template-columns:88px minmax(0,1fr);gap:4px 12px;margin:0;font-size:13px}
+.case dt{color:var(--muted)}
+.case dd{margin:0}
+.lesson{border-top:1px dashed var(--line);padding-top:10px;font-size:13.5px}
+.lesson b{color:var(--accent)}
+
+/* feed */
+.feedgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:900px){.feedgrid{grid-template-columns:1fr}}
+.feed{background:var(--panel);border:1px solid var(--line)}
+.fday{padding:8px 16px;font-family:var(--f-mono);font-size:12px;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--line);border-top:1px solid var(--line)}
+.fday:first-child{border-top:0}
+.fitem{padding:12px 16px;border-bottom:1px solid var(--line-soft);display:flex;flex-direction:column;gap:4px}
+.fitem:last-child{border-bottom:0}
+.fitem .t{font-weight:600;font-size:14.5px}
+.fitem .s{font-size:13.5px;color:var(--muted)}
+.fitem .meta{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;align-items:center}
+.ftag{font-family:var(--f-mono);font-size:11px;padding:1px 6px;background:var(--accent-soft);color:var(--accent);border-radius:3px}
+.empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:6px}
+.side{display:flex;flex-direction:column;gap:12px}
+.side .note p{font-size:13.5px}
+.feedtools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+
+.sources{font-size:12.5px;color:var(--muted);columns:2;column-gap:28px}
+.sources li{break-inside:avoid;margin-bottom:4px}
+@media (max-width:720px){.sources{columns:1}}
+footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <div class="eyebrow">Korea Data Center · RFS 2027–2030+</div>
+    <h1>K-DC 파이프라인 워치</h1>
+    <p class="lede">국내 진행 중인 데이터센터 프로젝트와 2028년 이후 RFS 예정 주요 사업을 사례 중심으로 정리한 시장 현황판입니다. 하단 데일리 피드와 프로젝트 상태는 매일 아침 자동으로 갱신됩니다.</p>
+  </div>
+  <div class="status">
+    <span class="pulse" id="pulse"><i></i><span id="pulseTxt">업데이트 연결 중</span></span>
+    <span class="muted" id="lastRun">기준 정보: 2026-10-19 작성</span>
+  </div>
+</header>
+
+<!-- KPI -->
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">시장 스냅샷</div>
+    <h2>숫자로 보는 2026년 하반기</h2>
+    <p>기관마다 모집단과 용량 정의(IT Load·수전·계약전력)가 달라 서로 더하거나 시계열로 잇지 않았습니다. 각 지표 아래에 출처와 기준을 적었습니다.</p>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span class="k">수도권 운영 용량 · 공실률</span><span class="v">663<small>MW</small> · 1.1<small>%</small></span><span class="s">H1 2026, 전반기 대비 +10%. 공실률은 6.9%(H2'25)에서 급락 · Cushman &amp; Wakefield</span></div>
+    <div class="kpi"><span class="k">수도권 계통영향평가 최종 승인률</span><span class="v">1.9<small>%</small></span><span class="s">522건(33,592MW) 신청 중 10건(1,010MW) 최종 공급가능, 2026.3 누적 · CBRE/한전</span></div>
+    <div class="kpi"><span class="k">수도권 상업용 공급 전망</span><span class="v">&gt;1,450<small>MW</small></span><span class="s">2028년 수도권 상업용 IT 공급 · CBRE Korea</span></div>
+    <div class="kpi"><span class="k">평균 상면 임대료</span><span class="v">14→25<small>만원/kW</small></span><span class="s">2019→2025, 5년 새 70% 이상 상승. CSP·대형 플랫폼이 수요의 88% · CBRE</span></div>
+    <div class="kpi"><span class="k">국내 DC 전력 수요 전망</span><span class="v">4,461→6,175<small>MW</small></span><span class="s">2025→2028, 연평균 약 11% · 한국IDC 전망 인용</span></div>
+    <div class="kpi"><span class="k">하이퍼스케일 PF 금리</span><span class="v">5~6<small>%</small> / 7~8<small>%</small></span><span class="s">선순위 / 중·후순위 대출금리 수준, 2026.9 · 이데일리</span></div>
+  </div>
+</section>
+
+<!-- Market structure -->
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">시장 구조</div>
+    <h2>전력이 입지를 고르는 시장</h2>
+    <p>예전에는 부지를 먼저 잡고 전력을 구했지만, 지금은 확보 가능한 전력이 곧 사업지의 가치를 정합니다. 수요는 수도권에, 전력 여유는 지방에 있는 구조가 시장 전체를 움직입니다.</p>
+  </div>
+  <div class="funnel" aria-label="수도권 계통영향평가 누적 흐름">
+    <div class="frow"><span>1차 기술검토 신청</span><div class="fbar"><span style="width:100%"></span></div><span class="n">522건 · 33.6GW</span></div>
+    <div class="frow"><span>1차 공급가능</span><div class="fbar"><span style="width:46.6%"></span></div><span class="n">243건 · 15.5GW</span></div>
+    <div class="frow"><span>본심사 상정</span><div class="fbar"><span style="width:4.6%"></span></div><span class="n">24건</span></div>
+    <div class="frow final"><span>최종 공급가능</span><div class="fbar"><span style="width:1.9%"></span></div><span class="n">10건 · 1.0GW</span></div>
+    <p class="muted" style="font-size:12px">막대 길이는 건수 기준(신청 522건 = 100%). 2026년 3월 수도권 누적, CBRE Korea가 한전 자료로 정리. 미상정 건 전체를 탈락으로 볼 수는 없습니다.</p>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="note"><span class="tag">01 · 수도권 프리미엄</span><h3>이미 전력을 쥔 자산이 귀해진다</h3><p>수도권 신규 전력 승인이 사실상 막히면서, 전력과 인허가를 먼저 확보한 사업지와 기존 운영 자산의 가치가 올라가고 있습니다. LG유플러스 파주(200MW 전력공급 확정)는 1동 준공 1년 전에 계약이 모두 찼고, 이지스 고양 삼송(80MW)은 2026년 7월 사용승인을 받았습니다.</p></div>
+    <div class="note"><span class="tag">02 · 지방 분산</span><h3>GW급 계획은 대부분 비수도권</h3><p>울산(SK·AWS), 동해(GS), 강릉, 군산(SGC), 해남(국가AI·솔라시도), 포항, 구미로 대형 AI 데이터센터가 몰립니다. 다만 전력만으로는 부족하고 앵커 임차인, 통신 이중화, 운영 인력, 변전소 확충이 함께 풀려야 합니다. 강릉은 변전 용량 문제로 2~5단계 입지 확정이 늦어지고 있습니다.</p></div>
+    <div class="note"><span class="tag">03 · 제도</span><h3>AIDC 특별법과 12차 전기본</h3><ul><li>AI 데이터센터 특별법 2026년 6월 공포, 2027년 상반기 시행 예정. 비수도권 사업의 계통영향평가 특례, 인허가 일괄처리, 재생에너지 직접 공급, 특구 지정 근거 마련</li><li>하위법령과 계통영향평가 운영규정은 아직 확정 전이라, 특례를 2026년 일정이나 금융모델에 미리 반영하기는 이릅니다</li><li>154kV 송변전 표준공기 6.5~7.5년이 목표 RFS를 검증하는 기준선</li></ul></div>
+    <div class="note"><span class="tag">04 · 금융 구조</span><h3>PFV로 짓고, 리츠·펀드로 회수</h3><p>데이터센터 PF는 분양형 부동산보다 장기 인프라 금융에 가깝습니다. 선임차 확약을 바탕으로 본PF를 일으키고, 준공 후 안정화되면 리츠 편입이나 인프라 펀드에 매각합니다. 군산 SGC는 착공 전 1.27조원 선매매 약정을, 인천 원창동은 KT클라우드의 31% 임차 확약을 확보한 뒤 PF를 진행했습니다. 국민연금도 데이터센터 전용 펀드 조성을 검토 중입니다.</p></div>
+  </div>
+</section>
+
+<!-- Timeline -->
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">RFS 타임라인</div>
+    <h2>언제, 어디서 공급이 열리나</h2>
+    <p>사업자가 공개한 준공·가동 목표연도 기준입니다. 단계형 사업은 단계별로 따로 놓았습니다. 칩을 누르면 아래 레지스터에서 해당 행으로 이동합니다.</p>
+  </div>
+  <div class="tl" id="timeline"></div>
+  <div class="legend"><span><i style="background:var(--metro)"></i>수도권</span><span><i style="background:var(--region)"></i>비수도권</span><span><i style="border:1px dashed var(--idle)"></i>발표·계획 단계 (확정 공급 아님)</span></div>
+</section>
+
+<!-- Register -->
+<section id="register">
+  <div class="sec-head">
+    <div class="eyebrow">프로젝트 레지스터</div>
+    <h2>주요 프로젝트 전체 목록</h2>
+    <p>용량은 원문 표기 그대로입니다(수전·IT Load·캠퍼스 총량이 섞여 있어 합산하지 않음). 데일리 업데이트로 상태가 바뀐 행은 주황색 메모가 붙습니다.</p>
+  </div>
+  <div class="filters">
+    <div class="seg" role="group" aria-label="권역">
+      <button type="button" data-f="reg" data-v="all" aria-pressed="true">전체</button>
+      <button type="button" data-f="reg" data-v="m" aria-pressed="false">수도권</button>
+      <button type="button" data-f="reg" data-v="r" aria-pressed="false">비수도권</button>
+    </div>
+    <div class="seg" role="group" aria-label="RFS">
+      <button type="button" data-f="yr" data-v="all" aria-pressed="true">전 기간</button>
+      <button type="button" data-f="yr" data-v="2027" aria-pressed="false">2027</button>
+      <button type="button" data-f="yr" data-v="2028" aria-pressed="false">2028</button>
+      <button type="button" data-f="yr" data-v="2029" aria-pressed="false">2029</button>
+      <button type="button" data-f="yr" data-v="2030" aria-pressed="false">2030+</button>
+    </div>
+    <input id="q" type="search" placeholder="사업명·사업주·지역 검색" aria-label="검색">
+    <span class="count" id="count"></span>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>프로젝트</th><th>권역</th><th>사업주 · 주요 참여자</th><th>용량 (원문)</th><th>단계</th><th>RFS 목표</th><th>메모</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Cases -->
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">사례 분석</div>
+    <h2>2028년 이후 공급을 이끄는 다섯 가지 모델</h2>
+    <p>같은 데이터센터라도 앵커·전력·자금 조달 방식이 다르면 리스크 지점이 다릅니다. 대표 사례별로 구조와 시사점을 정리했습니다.</p>
+  </div>
+  <div class="cases">
+    <article class="case">
+      <div class="case-h"><h3>SK·AWS 울산 AIDC</h3><span class="mono">빅테크 앵커형</span></div>
+      <div class="case-b">
+        <dl><dt>위치</dt><dd>울산 미포국가산단 (SK케미칼 유휴부지)</dd><dt>규모</dt><dd>41MW(2027.11) → 103MW(2029.02), 장기 1GW 확장 구상</dd><dt>구조</dt><dd>SK브로드밴드 발주, SK에코플랜트 시공(A동 도급 4,169억원). AWS가 AI 존 앵커로 참여</dd></dl>
+        <p>AWS 수요를 먼저 확보한 뒤 착공한 국내 첫 하이퍼스케일 AI 전용 센터입니다. SK는 이를 시작으로 영남권 2GW 이상, 전국 15GW 규모 AI 인프라 구상을 내놓았습니다.</p>
+        <p class="lesson"><b>시사점</b> 앵커 임차인이 착공 전에 정해지면 비수도권 리스크(수요·자금)가 크게 줄어듭니다. 단, SK 측은 NDA를 이유로 정확한 용량을 공식 확인하지 않았습니다.</p>
+      </div>
+    </article>
+    <article class="case">
+      <div class="case-h"><h3>군산 SGC AI 데이터센터</h3><span class="mono">발전소 결합형</span></div>
+      <div class="case-b">
+        <dl><dt>위치</dt><dd>전북 군산 국가2산단 (SGC그린파워 부지)</dd><dt>규모</dt><dd>1단계 60MW, 2028 1Q 상업운영 → 2차 240MW(2030 목표), 총 300MW</dd><dt>구조</dt><dd>SGC-KIS 제1호 PEF(SGC에너지 869억 LP, 한국투자증권 등 Co-GP), PF 6,570억 기표, 착공 전 1.27조 선매매 약정. KT클라우드 DBO, 현대엔지니어링 시공</dd></dl>
+        <p>자체 열병합 발전소 전력을 데이터센터에 직접 공급하는 온사이트 모델입니다. 2차 240MW는 이미 계통영향평가를 신청했고 2028년 9월 최종 심의를 목표로 합니다.</p>
+        <p class="lesson"><b>시사점</b> 선매매로 엑시트를 착공 전에 고정하고 그 회수금을 다음 단계에 재투입하는 구조. 발전사업자가 DC 개발자로 넘어오는 흐름의 첫 사례입니다.</p>
+      </div>
+    </article>
+    <article class="case">
+      <div class="case-h"><h3>GS 동해 AI 데이터센터 캠퍼스</h3><span class="mono">GW급 캠퍼스형</span></div>
+      <div class="case-b">
+        <dl><dt>위치</dt><dd>강원 동해 북평제2일반산단 (GS동해전력 맞은편)</dd><dt>규모</dt><dd>1단계 첫 동 100MW, 2028 하반기 준공 목표 / 캠퍼스 총 1.2GW (일부 보도는 2.4GW)</dd><dt>진행</dt><dd>2026.10.1 건축허가, 산단 관리계획 변경과 계통영향평가 완료. 연내 착공 예정</dd></dl>
+        <p>북평변전소에서 1km 거리로 계통 접속이 유리하고, 수소특화단지와 붙어 있습니다. 총사업비는 수십조원대로 보도되며 GS건설이 핵심 수혜사로 거론됩니다.</p>
+        <p class="lesson"><b>시사점</b> 인허가와 전력이 동시에 확인된 몇 안 되는 GW급 사업. 남은 변수는 1.2GW를 채울 임차인과 자금 조달입니다.</p>
+      </div>
+    </article>
+    <article class="case">
+      <div class="case-h"><h3>용인 덕성리 AI 데이터센터</h3><span class="mono">수도권 PF형</span></div>
+      <div class="case-b">
+        <dl><dt>위치</dt><dd>경기 용인 제2용인테크노밸리 인근</dd><dt>규모</dt><dd>수전 80MW, 총사업비 약 1.4조원</dd><dt>구조</dt><dd>본PF 약 7,100억원(엠디엠자산운용·유진투자증권 주선, 만기 2029.05), 워버그핀커스·와이드크릭 지분 인수, 삼성물산 시공</dd></dl>
+        <p>수도권에서 전력을 확보한 대형 개발사업이 글로벌 PE 자금과 결합한 사례입니다. 다른 상업용 부동산의 본PF 전환이 막힌 시기에 조달을 마쳤다는 점에서 시장의 선호를 보여줍니다.</p>
+        <p class="lesson"><b>시사점</b> 수도권은 신규 공급이 막혀 있어, 전력을 가진 개발 자산은 금리보다 향후 자산가치와 임대 현금흐름으로 평가받습니다.</p>
+      </div>
+    </article>
+    <article class="case">
+      <div class="case-h"><h3>국가 AI 컴퓨팅센터 (해남)</h3><span class="mono">공공 AI 인프라형</span></div>
+      <div class="case-b">
+        <dl><dt>위치</dt><dd>전남 해남 솔라시도 데이터센터 파크</dd><dt>규모</dt><dd>2028년 40MW·GPU 1.5만장 → 2030년 80MW·GPU 5만장</dd><dt>구조</dt><dd>코아크(삼성SDS·네이버클라우드 등) 구축·운영, 약 2.5조원. 2026.8.3 착공</dd></dl>
+        <p>산·학·연에 저렴한 AI 컴퓨팅을 제공하는 정부 주도 사업입니다. 같은 솔라시도에는 BS산업의 1GW 데이터센터 파크(154kV 변전소 2028년 말 목표)가 함께 추진됩니다.</p>
+        <p class="lesson"><b>시사점</b> 공공 앵커가 먼저 들어가 전력·통신 인프라를 깔면, 민간 파크가 뒤따르는 순서. 재생에너지 직접 공급(RE100) 수요가 핵심 유인입니다.</p>
+      </div>
+    </article>
+    <article class="case">
+      <div class="case-h"><h3>LG유플러스 파주 AIDC</h3><span class="mono">통신사 직접개발형</span></div>
+      <div class="case-b">
+        <dl><dt>위치</dt><dd>경기 파주</dd><dt>규모</dt><dd>전력공급 200MW 확정(수도권 유일 하이퍼스케일급), 1동 50MW 2027.06 준공 목표, 연면적 약 15만㎡</dd><dt>구조</dt><dd>LG유플러스 자체 개발·운영, LG전자(냉각)·LG엔솔(배터리) 참여, 모듈형(PMDC) 공법</dd></dl>
+        <p>공기·액체 하이브리드 냉각을 채택했고, 1동은 준공 1년 전에 계약이 모두 끝났습니다. 2030년까지 AIDC 누적 수주 5조원이 목표입니다.</p>
+        <p class="lesson"><b>시사점</b> 수도권 대용량 전력 + 빠른 공기가 결합되면 임차 수요는 선판매로 해결됩니다. 2028년 이후 2동 이후 일정이 다음 관전 포인트입니다.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- Feed -->
+<section id="feed-sec">
+  <div class="sec-head">
+    <div class="eyebrow">데일리 업데이트</div>
+    <h2>매일 아침 정리되는 데이터센터 뉴스</h2>
+    <p>매일 오전 7시경 자동 수집됩니다. 착공·준공·PF·계통영향평가·정책처럼 프로젝트 단계를 바꾸는 소식 위주로 고릅니다.</p>
+  </div>
+  <div class="feedgrid">
+    <div>
+      <div class="feedtools seg" role="group" aria-label="뉴스 분류" id="feedtools">
+        <button type="button" data-t="all" aria-pressed="true">전체</button>
+        <button type="button" data-t="착공·준공" aria-pressed="false">착공·준공</button>
+        <button type="button" data-t="금융·거래" aria-pressed="false">금융·거래</button>
+        <button type="button" data-t="전력·정책" aria-pressed="false">전력·정책</button>
+        <button type="button" data-t="신규 발표" aria-pressed="false">신규 발표</button>
+      </div>
+      <div class="feed" id="feed">
+        <div class="empty"><b>피드를 불러오는 중입니다</b><span>업데이트 저장소에 연결되면 최근 뉴스가 날짜별로 표시됩니다.</span></div>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="note"><span class="tag">WATCHLIST</span><h3>앞으로 6~12개월 확인할 것</h3><ul>
+        <li>AIDC 특별법 하위법령·계통영향평가 운영규정 확정</li>
+        <li>동해 GS·강릉 1단계·군산 SGC 착공 실행 여부</li>
+        <li>울산 41MW(2027.11)·파주 1동(2027.06) 목표 준수</li>
+        <li>스타게이트 코리아(OpenAI–SK 서남권) 부지·자금 구체화</li>
+        <li>국민연금 데이터센터 전용 펀드 위탁운용사 선정</li>
+      </ul></div>
+      <div class="note"><span class="tag">읽는 법</span><p>“전력 확보” 발표와 전기사용계약·실제 수전은 다른 단계입니다. 단계가 실제로 바뀐 사업만 레지스터 상태를 올립니다.</p></div>
+    </aside>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="eyebrow">출처</div><h2>주요 근거 자료</h2></div>
+  <ul class="sources">
+    <li><a href="https://www.cushmanwakefield.com/ko-kr/south-korea/news/2026/08/apac-data-centre-development-pipeline-reaches-record-26-5gw-in-h1-2026" target="_blank" rel="noopener">Cushman &amp; Wakefield, H1 2026 APAC DC 파이프라인</a></li>
+    <li><a href="https://www.etnews.com/20260713000288" target="_blank" rel="noopener">전자신문, 수도권 전력평가 통과율 2% (CBRE)</a></li>
+    <li><a href="https://www.ai-dc.co.kr/research/2026-korea-data-center-development-permit-power-census" target="_blank" rel="noopener">AI-DC KOREA, 2026 개발·인허가·전력 전수 동향</a></li>
+    <li><a href="https://www.dataeconomy.co.kr/news/articleView.html?idxno=40190" target="_blank" rel="noopener">한국데이터경제신문, 12차 전기본 DC 수요 분석</a></li>
+    <li><a href="https://m.news.nate.com/view/20260920n18394" target="_blank" rel="noopener">이데일리, 데이터센터 PF에 몰리는 돈</a></li>
+    <li><a href="https://www.fnnews.com/news/202511171041595230" target="_blank" rel="noopener">파이낸셜뉴스, 울산 AIDC A동 2027.5 준공</a></li>
+    <li><a href="https://www.blockmedia.co.kr/archives/1141412" target="_blank" rel="noopener">블록미디어, 파주·울산·해남·구미 가동 준비 현황</a></li>
+    <li><a href="https://www.lg.co.kr/media/release/30228" target="_blank" rel="noopener">LG유플러스, 파주 AIDC 전략 발표</a></li>
+    <li><a href="https://www.fnnews.com/news/202610060934305665" target="_blank" rel="noopener">파이낸셜뉴스, 동해 AI DC 건축허가</a></li>
+    <li><a href="https://news.mtn.co.kr/news-detail/2026091115231729052" target="_blank" rel="noopener">MTN, SGC에너지 군산 60MW·PEF 설립</a></li>
+    <li><a href="https://dealsite.co.kr/articles/169963" target="_blank" rel="noopener">딜사이트, 군산 AIDC 1.27조 선매매 약정</a></li>
+    <li><a href="https://news.mtn.co.kr/news-detail/2026092810152929451" target="_blank" rel="noopener">MTN, KT클라우드 군산 60MW DBO</a></li>
+    <li><a href="https://inews24.com/view/2012707" target="_blank" rel="noopener">아이뉴스24, 인천 원창동 50MW 수주</a></li>
+    <li><a href="https://www.edaily.co.kr/News/Read?mediaCodeNo=257&amp;newsId=05756406645420712" target="_blank" rel="noopener">이데일리, 용인 덕성리 본PF 7,100억</a></li>
+    <li><a href="https://www.korea.kr/news/policyNewsView.do?newsId=148969296" target="_blank" rel="noopener">정책브리핑, 국가 AI 컴퓨팅센터 착공</a></li>
+    <li><a href="https://www.hyundaimotorgroup.com/ko/news/hyundai-engineering-construction-ai-data-center-completion" target="_blank" rel="noopener">현대건설, 포항 AI 데이터센터</a></li>
+    <li><a href="https://news.mtn.co.kr/news-detail/2026031913385767317" target="_blank" rel="noopener">MTN, 강릉 AI 데이터센터 1단계</a></li>
+    <li><a href="https://www.fnnews.com/news/202607201353325472" target="_blank" rel="noopener">파이낸셜뉴스, 강원 AI DC 격전지(삼성 춘천)</a></li>
+    <li><a href="https://www.koreajoongangdaily.com/business/opeunai-judo-seutageiteu-kolia-peulojegteu-1nyeonjjae-jejalisamseongskdo-hwagjeongdoen-geos-eobsda/12860695" target="_blank" rel="noopener">코리아중앙데일리, 스타게이트 코리아 답보</a></li>
+    <li><a href="https://www.smarttoday.co.kr/ko-kr/articles/62523" target="_blank" rel="noopener">스마트투데이, 솔라시도 DC파크 전력인프라 협약</a></li>
+  </ul>
+</section>
+
+<footer>공개 보도와 사업자 발표를 모은 시장 정리이며, 개별 사업의 전력공급·인허가·투자수익을 보장하지 않습니다. 투자 검토 시에는 원본 계약·허가·계통 문서를 다시 확인하세요.</footer>
+</div>
+
+<script id="snap" type="application/json">{"lastRun": "2026-10-19 10:50 KST", "note": "최근 5주 주요 뉴스 8건", "news": [{"date": "2026-10-19", "source": "서울경제", "summary": "PEF·자산운용사 의견을 듣는 수요 파악 단계. 확정 시 콘테스트로 위탁운용사 선정 예정.", "tag": "금융·거래", "title": "국민연금, 데이터센터 전용 펀드 조성 검토", "url": "https://m.sedaily.com/article/20103146", "id": "20261019-nps"}, {"date": "2026-10-15", "source": "이데일리", "summary": "기존 공장을 전환한 수전 7.6MW(IT 4.82MW) 엣지 데이터센터. IT용량 41% 선임차 확약, 2027년 하반기 운영 목표.", "tag": "착공·준공", "title": "안산 반월공단 '아워DC' 착공, PF 1,110억 실행", "url": "https://edaily.co.kr/News/Read?mediaCodeNo=257&newsId=03857286645613248", "id": "20261015-ourdc"}, {"date": "2026-10-07", "project": "wonchang", "source": "아이뉴스24", "summary": "청라IDC PFV 발주, 총 사업규모 약 8,700억원. 11월 착공, 2029년 하반기 준공 예정. MEP는 KT클라우드 공동 시공.", "tag": "착공·준공", "title": "현대엔지니어링, 인천 원창동 50MW 데이터센터 수주", "url": "https://inews24.com/view/2012707", "id": "20261007-wonchang"}, {"date": "2026-10-06", "project": "donghae1", "source": "파이낸셜뉴스", "summary": "총 1.2GW 캠퍼스의 1단계. 산단 관리계획 변경과 한전 계통영향평가까지 마쳐 연내 착공, 2028년 하반기 준공 목표.", "tag": "전력·정책", "title": "GS 동해 AI DC 첫 100MW 건축허가 완료", "url": "https://www.fnnews.com/news/202610060934305665", "id": "20261006-donghae"}, {"date": "2026-10-06", "project": "gangneung1", "source": "MTN", "summary": "민선 9기 100일 기자회견에서 1단계 80MW 연내 착공을 재확인.", "tag": "착공·준공", "title": "강릉시, 80MW 강동 AI 데이터센터 연내 착공 계획 발표", "url": "https://news.mtn.co.kr/news-detail/2026100615505310880", "id": "20261006-gangneung"}, {"date": "2026-10-01", "project": "gunsan1", "source": "딜사이트", "summary": "SGC-KIS PEF가 사모펀드와 착공 전 선매매 체결. 회수금은 240MW 발전소 결합형 2차 사업에 투입 계획.", "tag": "금융·거래", "title": "군산 SGC AI 데이터센터, 1.27조원 선매매 약정", "url": "https://dealsite.co.kr/articles/169963", "id": "20261001-gunsan-presale"}, {"date": "2026-09-28", "project": "gunsan1", "source": "MTN", "summary": "전 층 액체냉각(베라루빈 대응), 프리팹 모듈러로 공기 50% 단축 목표. 2028년 1분기 운영, 300MW까지 확장.", "tag": "신규 발표", "title": "KT클라우드, 군산 60MW AI DC 설계·시공·운영 참여", "url": "https://news.mtn.co.kr/news-detail/2026092810152929451", "id": "20260928-gunsan-ktc"}, {"date": "2026-09-21", "project": "pohang", "source": "현대자동차그룹", "summary": "수전 40MW(IT 32MW), 수랭식·PUE 1.25. 공기 16.5개월, 2027년 11월 준공 예정.", "tag": "착공·준공", "title": "현대건설, 포항 AI 데이터센터 본계약·PC 설치 착수", "url": "https://www.hyundaimotorgroup.com/ko/news/hyundai-engineering-construction-ai-data-center-completion", "id": "20260921-pohang"}], "projectUpdates": {}}</script>
+<script>
+// st: build=건설중, permit=인허가·전력확보/착공준비, plan=계획·부지, ann=발표형
+const P=[
+ {id:"ulsan1",n:"SK·AWS 울산 AIDC (1단계)",loc:"울산 남구 미포산단",reg:"r",sp:"SK브로드밴드·SKT / AWS 앵커, SK에코플랜트 시공",cap:"41MW",st:"build",rfs:"2027.11",yr:2027,memo:"국내 첫 하이퍼스케일 AI 전용. A동 2027.5 준공 목표"},
+ {id:"paju1",n:"LG유플러스 파주 AIDC 1동",loc:"경기 파주",reg:"m",sp:"LG유플러스 (LG전자·LG엔솔)",cap:"1동 50MW / 전력 200MW",st:"build",rfs:"2027.06",yr:2027,memo:"1동 사전 완판. 수도권 유일 200MW 전력공급 확정"},
+ {id:"pohang",n:"포항 AI 데이터센터",loc:"경북 포항 광명산단",reg:"r",sp:"AI Factory Pohang PFV·네오AI클라우드 / 포레스트파트너스, 현대건설",cap:"수전 40MW (IT 32MW)",st:"build",rfs:"2027.11",yr:2027,memo:"국내 첫 수랭식 전용, PUE 1.25. 2단계 포함 300MW 목표"},
+ {id:"chuncheon",n:"삼성SDS 춘천 모듈러 AIDC",loc:"강원 춘천 칠전동",reg:"r",sp:"삼성SDS",cap:"미공개",st:"build",rfs:"2027.10",yr:2027,memo:"B300 GPU 탑재 예정. 2026.8 착공 계획 보도"},
+ {id:"icn11",n:"Digital Realty ICN11",loc:"경기 김포",reg:"m",sp:"Digital Realty",cap:"64MW critical IT",st:"build",rfs:"2027 (공사 2027.10 종료)",yr:2027,memo:"공사계약 종료일과 RFS는 별개로 추적 필요"},
+ {id:"sel3",n:"Digital Edge SEL3",loc:"인천 부평",reg:"m",sp:"Digital Edge",cap:"60MW",st:"build",rfs:"2027 Q4",yr:2027,memo:"용량 정의(IT/수전) 미확인"},
+ {id:"daou",n:"다우 죽전 CDC",loc:"경기 용인",reg:"m",sp:"다우기술",cap:"수전 40MW / IT 26MW",st:"build",rfs:"2027 Q2",yr:2027,memo:"공식자료 2026년 말 준공 표기와 상충"},
+ {id:"choji",n:"이지스 안산 초지동 DC",loc:"경기 안산",reg:"m",sp:"이지스자산운용 / 인베스코",cap:"수전 40MW",st:"build",rfs:"2027 H2",yr:2027,memo:"인베스코의 첫 아시아 DC 투자"},
+ {id:"jangseong",n:"장성 파인데이터센터",loc:"전남 장성",reg:"r",sp:"파인디씨PFV / 대우건설 출자·시공",cap:"수전 26MW",st:"build",rfs:"2027.12",yr:2027,memo:"전남 1호 민간 DC, 사업비 3,959억"},
+ {id:"haenam1",n:"국가 AI 컴퓨팅센터 1단계",loc:"전남 해남 솔라시도",reg:"r",sp:"코아크 (삼성SDS·네이버클라우드 등)",cap:"40MW · GPU 1.5만장",st:"build",rfs:"2028",yr:2028,memo:"2026.8.3 착공, 총 약 2.5조"},
+ {id:"gunsan1",n:"군산 SGC AIDC 1단계",loc:"전북 군산 국가2산단",reg:"r",sp:"SGC에너지·SGC-KIS PEF(한투증권 Co-GP) / KT클라우드 DBO, 현대ENG",cap:"60MW",st:"build",rfs:"2028 Q1",yr:2028,memo:"PF 6,570억 기표, 1.27조 선매매. 2027 Q3 시범운영"},
+ {id:"donghae1",n:"GS 동해 AI DC 캠퍼스 1단계",loc:"강원 동해 북평제2산단",reg:"r",sp:"GS그룹 (동해에이아이제3캠퍼스)",cap:"첫 동 100MW / 캠퍼스 1.2GW",st:"permit",rfs:"2028 H2",yr:2028,memo:"2026.10.1 건축허가, 계통영향평가 완료. 연내 착공"},
+ {id:"gangneung1",n:"강릉 AI DC 1단계",loc:"강원 강릉 강동면 안인진리",reg:"r",sp:"강릉디씨피에프(SPC)",cap:"80MW / 단지 1GW",st:"permit",rfs:"2028.12",yr:2028,memo:"3월 기공식, 한전 전력사용승인 대기. 2~5단계 940MW는 변전소 협의 중"},
+ {id:"pdg",n:"PDG SE1",loc:"인천",reg:"m",sp:"Princeton Digital Group",cap:"48MW",st:"build",rfs:"2028 초",yr:2028,memo:"7억 달러 투자"},
+ {id:"sel02",n:"DCI·코람코 안산 시화 SEL02",loc:"경기 안산",reg:"m",sp:"DCI Data Centers·코람코",cap:"40MW",st:"build",rfs:"2028",yr:2028,memo:"2026.6 착공"},
+ {id:"deoksung",n:"용인 덕성리 AI DC",loc:"경기 용인 처인구",reg:"m",sp:"제이용인테크노밸리 / 워버그핀커스·와이드크릭, 삼성물산",cap:"수전 80MW",st:"build",rfs:"2028 (공식 RFS 미공개)",yr:2028,memo:"총사업비 1.4조, 본PF 7,100억(만기 2029.05)"},
+ {id:"nfd-yongin",n:"NFD 용인",loc:"경기 용인",reg:"m",sp:"NFD",cap:"IT 56MW (초기 80MW 시설)",st:"build",rfs:"2028 Q2",yr:2028,memo:"초기 발표 대비 용량 정의 변경"},
+ {id:"nfd-dangjin",n:"NFD 당진",loc:"충남 당진",reg:"r",sp:"NFD",cap:"IT 140MW (캠퍼스 300MW)",st:"plan",rfs:"2028 Q4",yr:2028,memo:"초기 2028 Q1에서 Q4로 순연"},
+ {id:"naver-sejong",n:"네이버 각 세종 AI Factory",loc:"세종",reg:"r",sp:"네이버클라우드",cap:"2027 100MW → 2028 200MW (누적)",st:"build",rfs:"2028",yr:2028,memo:"운영 중 센터의 단계 확장"},
+ {id:"ulsan2",n:"SK·AWS 울산 AIDC (전체)",loc:"울산 남구 미포산단",reg:"r",sp:"SK브로드밴드·SKT / AWS",cap:"103MW (1단계 41MW 포함)",st:"build",rfs:"2029.02",yr:2029,memo:"장기 1GW 확장은 협의 단계"},
+ {id:"gumi",n:"삼성SDS 구미 AI DC",loc:"경북 구미",reg:"r",sp:"삼성SDS",cap:"60MW",st:"plan",rfs:"2029.03",yr:2029,memo:"하이브리드 냉각. 현대ENG 우선협상"},
+ {id:"wonchang",n:"인천 원창동 DC",loc:"인천 서구 원창동",reg:"m",sp:"이도·청라IDC PFV / KT클라우드, 현대ENG",cap:"50MW",st:"permit",rfs:"2029 H2",yr:2029,memo:"사업비 8,700억, 2026.11 착공. KT클라우드 31% 임차확약"},
+ {id:"donghae2",n:"GS 동해 캠퍼스 잔여 단계",loc:"강원 동해",reg:"r",sp:"GS그룹",cap:"누적 1.2GW",st:"ann",rfs:"2029",yr:2029,memo:"단계별 일정 미확정, 임차인 미공개"},
+ {id:"keppel",n:"Keppel 안산 원시동 DC",loc:"경기 안산",reg:"m",sp:"케펠자산운용 / 삼성SRA, KT클라우드, 현대건설",cap:"수전 60MW / IT 40MW",st:"permit",rfs:"2030",yr:2030,memo:"본PF 8,435억 조달 추진"},
+ {id:"ksquare",n:"K-Square 의정부",loc:"경기 의정부",reg:"m",sp:"K-Square",cap:"수전 100MW",st:"plan",rfs:"2030",yr:2030,memo:"전기사용계약 보도, 단계 가동"},
+ {id:"haenam2",n:"국가 AI 컴퓨팅센터 2단계",loc:"전남 해남",reg:"r",sp:"코아크",cap:"80MW · GPU 5만장 (누적)",st:"build",rfs:"2030",yr:2030,memo:"1단계 40MW 포함"},
+ {id:"gunsan2",n:"군산 SGC AIDC 2차",loc:"전북 군산",reg:"r",sp:"SGC에너지",cap:"240MW",st:"plan",rfs:"2030",yr:2030,memo:"계통영향평가 신청, 2028.9 심의 목표·2029 착공. LNG 발전 결합"},
+ {id:"solasido",n:"솔라시도 데이터센터 파크",loc:"전남 해남",reg:"r",sp:"BS산업(보성그룹)",cap:"1차 200MW / 장기 1GW",st:"plan",rfs:"2030",yr:2030,memo:"154kV 변전소·송전선 2028년 말 목표"},
+ {id:"stargate",n:"스타게이트 코리아 (OpenAI–SK 서남권)",loc:"서남권 (부지 미정)",reg:"r",sp:"SK텔레콤·OpenAI",cap:"미공개",st:"ann",rfs:"미정",yr:2030,memo:"MOU 이후 1년간 건설·자금 구조 진전 없음"}
+];
+const ST={build:["건설중","st-build"],permit:["인허가·착공준비","st-permit"],plan:["계획·부지","st-plan"],ann:["발표·구상","st-ann"]};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let upd={}; const F={reg:"all",yr:"all",q:""};
+
+function merged(p){const u=upd[p.id];return u?{...p,st:u.stage&&ST[u.stage]?u.stage:p.st,rfs:u.rfs||p.rfs,u}:p}
+
+function renderTimeline(){
+  const cols=[[2027,"진행 중·단기"],[2028,"RFS 2028"],[2029,"RFS 2029"],[2030,"2030 이후"]];
+  document.getElementById("timeline").innerHTML=cols.map(([y,l])=>{
+    const items=P.map(merged).filter(p=>p.yr===y);
+    return `<div class="tl-col"><div class="tl-yr"><b>${y===2030?"2030+":y}</b><span>${l} · ${items.length}건</span></div><div class="tl-list">${
+      items.map(p=>`<button type="button" class="chip ${p.reg==="r"?"rg":""} ${p.st==="ann"||p.st==="plan"?"ann":""}" data-jump="${p.id}"><b>${esc(p.n)}</b><em>${esc(p.cap)} · ${esc(p.rfs)}</em></button>`).join("")
+    }</div></div>`}).join("");
+}
+function renderTable(){
+  const q=F.q.trim().toLowerCase();
+  const rows=P.map(merged).filter(p=>(F.reg==="all"||p.reg===F.reg)&&(F.yr==="all"||String(p.yr)===F.yr)&&(!q||[p.n,p.loc,p.sp,p.memo].join(" ").toLowerCase().includes(q)));
+  document.getElementById("count").textContent=`${rows.length} / ${P.length}건`;
+  document.getElementById("tbody").innerHTML=rows.map(p=>{const s=ST[p.st];return `<tr id="row-${p.id}">
+    <td class="name"><b>${esc(p.n)}</b><span>${esc(p.loc)}</span></td>
+    <td><span class="reg ${p.reg}">${p.reg==="m"?"수도권":"비수도권"}</span></td>
+    <td style="font-size:12.8px">${esc(p.sp)}</td>
+    <td class="cap">${esc(p.cap)}</td>
+    <td><span class="pill ${s[1]}">${s[0]}</span></td>
+    <td class="rfs">${esc(p.rfs)}</td>
+    <td class="memo">${esc(p.memo)}${p.u?`<span class="upd">${esc(p.u.date||"")} 업데이트 · ${esc(p.u.note||"")}${p.u.url?` <a href="${esc(p.u.url)}" target="_blank" rel="noopener">원문</a>`:""}</span>`:""}</td></tr>`}).join("")||`<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">조건에 맞는 프로젝트가 없습니다. 필터를 바꿔 보세요.</td></tr>`;
+}
+document.querySelectorAll(".filters .seg button").forEach(b=>b.addEventListener("click",()=>{
+  F[b.dataset.f]=b.dataset.v;
+  b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+  renderTable();
+}));
+document.getElementById("q").addEventListener("input",e=>{F.q=e.target.value;renderTable()});
+document.getElementById("timeline").addEventListener("click",e=>{
+  const c=e.target.closest("[data-jump]"); if(!c) return;
+  F.reg="all";F.yr="all";F.q="";document.getElementById("q").value="";
+  document.querySelectorAll(".filters .seg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v==="all"?"true":"false"));
+  renderTable();
+  const r=document.getElementById("row-"+c.dataset.jump); if(!r) return;
+  r.classList.add("hl"); r.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
+  setTimeout(()=>r.classList.remove("hl"),2400);
+});
+
+// ---- feed ----
+let news=[], tagF="all";
+function renderFeed(){
+  const el=document.getElementById("feed");
+  const list=news.filter(n=>tagF==="all"||n.tag===tagF);
+  if(!list.length){el.innerHTML=`<div class="empty"><b>${news.length?"이 분류의 소식이 아직 없습니다":"아직 수집된 뉴스가 없습니다"}</b><span>${news.length?"다른 분류를 선택해 보세요.":"매일 오전 자동 수집이 돌면 여기에 날짜별로 쌓입니다."}</span></div>`;return}
+  let html="",day="";
+  for(const n of list){
+    if(n.date!==day){day=n.date;html+=`<div class="fday">${esc(day)}</div>`}
+    const pj=n.project?P.find(p=>p.id===n.project):null;
+    html+=`<div class="fitem"><span class="t">${esc(n.title)}</span>${n.summary?`<span class="s">${esc(n.summary)}</span>`:""}<span class="meta">${n.tag?`<span class="ftag">${esc(n.tag)}</span>`:""}${pj?`<span class="muted">↳ ${esc(pj.n)}</span>`:""}${n.url?`<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.source||"원문")}</a>`:`<span class="muted">${esc(n.source||"")}</span>`}</span></div>`;
+  }
+  el.innerHTML=html;
+}
+document.getElementById("feedtools").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return; tagF=b.dataset.t;
+  b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+  renderFeed();
+});
+
+// 페이지에 내장된 스냅샷(매일 아침 재게시) — 로그인 없이 공개 링크로 열어도 보임
+let snap={}; try{snap=JSON.parse(document.getElementById("snap").textContent||"{}")}catch(e){}
+news=(snap.news||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+upd=snap.projectUpdates||{};
+if(snap.lastRun) document.getElementById("lastRun").textContent=`마지막 자동 업데이트: ${snap.lastRun}${snap.note?" · "+snap.note:""}`;
+renderTimeline(); renderTable(); renderFeed();
+{const pulse=document.getElementById("pulse");pulse.classList.add("live");document.getElementById("pulseTxt").textContent="매일 아침 자동 갱신";}
+
+(async()=>{
+  const pt=document.getElementById("pulseTxt");
+  let db=null; try{db=await window.claude?.use?.("db")}catch(e){}
+  if(!db) return; // 공개 보기: 내장 스냅샷으로 충분
+  pt.textContent="실시간 연결됨";
+  db.collection("news").orderBy("date","desc").limit(120).onSnapshot(s=>{news=s.docs.map(d=>({id:d.id,...d.data()}));renderFeed()},()=>{});
+  db.collection("projectUpdates").onSnapshot(s=>{upd={};s.docs.forEach(d=>upd[d.id]=d.data());renderTimeline();renderTable()},()=>{});
+  db.doc("meta/status").onSnapshot(d=>{if(d.exists){const m=d.data();document.getElementById("lastRun").textContent=`마지막 자동 업데이트: ${m.lastRun||"-"}${m.note?" · "+m.note:""}`}},()=>{});
+})();
+</script>
+</body>
+</html>
